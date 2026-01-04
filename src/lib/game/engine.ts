@@ -56,7 +56,7 @@ export class GameEngine {
         color: PLAYER_COLORS[index],
         hand: drawn,
         territories: [],
-        actions: 3,
+        actions: ACTIONS_PER_TURN,
         isActive: index === 0,
         isEliminated: false,
         alliances: [],
@@ -165,24 +165,29 @@ export class GameEngine {
     return state;
   }
 
-  // 턴 페이즈 전환
+  // 턴 페이즈 전환 (성능 최적화: 상수 배열과 Map 사용)
   static nextPhase(state: GameState): GameState {
-    const phases: TurnPhase[] = ['draw', 'action', 'discard'];
-    const currentIndex = phases.indexOf(state.turnPhase);
+    const currentIndex = PHASE_INDEX_MAP[state.turnPhase];
 
-    if (currentIndex < phases.length - 1) {
-      state.turnPhase = phases[currentIndex + 1];
+    if (currentIndex < TURN_PHASES.length - 1) {
+      state.turnPhase = TURN_PHASES[currentIndex + 1];
     }
 
     return state;
   }
 
-  // 턴 종료
+  // 턴 종료 (action 또는 discard 페이즈에서만 호출 가능)
   static endTurn(state: GameState): GameState {
+    // draw 페이즈에서는 턴 종료 불가
+    if (state.turnPhase === 'draw') {
+      GameEngine.addLog(state, state.players[state.currentPlayerIndex].id, '카드를 먼저 뽑아야 합니다.');
+      return state;
+    }
+
     const currentPlayer = state.players[state.currentPlayerIndex];
 
-    // 손패 초과 시 버리기 필요
-    if (currentPlayer.hand.length > 7) {
+    // 손패 초과 시 버리기 필요 (MAX_HAND_SIZE 상수 사용)
+    if (currentPlayer.hand.length > MAX_HAND_SIZE) {
       state.turnPhase = 'discard';
       return state;
     }
@@ -208,11 +213,13 @@ export class GameEngine {
     const nextPlayer = state.players[nextIndex];
     const territoryBonus = GameEngine.calculateTerritoryBonus(state, nextPlayer.id);
 
-    // 기본 행동력 3 + 영토 보너스
-    nextPlayer.actions = 3 + territoryBonus.bonusActions;
+    // 기본 행동력 + 영토 보너스
+    nextPlayer.actions = ACTIONS_PER_TURN + territoryBonus.bonusActions;
 
-    // 한 바퀴 돌면 턴 수 증가
-    if (nextIndex === 0) {
+    // 한 바퀴 돌면 턴 수 증가 (첫 번째 생존 플레이어로 돌아올 때)
+    // 플레이어 0이 탈락해도 정상 작동하도록 첫 번째 생존자 기준으로 판단
+    const firstAliveIndex = state.players.findIndex((p) => !p.isEliminated);
+    if (nextIndex === firstAliveIndex && nextIndex <= state.currentPlayerIndex) {
       state.currentTurn++;
     }
 
@@ -528,7 +535,7 @@ export class GameEngine {
     return state;
   }
 
-  // 카드 버리기
+  // 카드 버리기 (discard 페이즈에서 손패 초과분 버리기)
   static discardCard(state: GameState, playerId: string, cardInstanceId: string): GameState {
     const player = state.players.find((p) => p.id === playerId);
     if (!player) return state;
@@ -538,6 +545,11 @@ export class GameEngine {
 
     const [card] = player.hand.splice(cardIndex, 1);
     state.discardPile.push(card);
+
+    // discard 페이즈에서 손패가 제한 이하가 되면 자동으로 턴 종료
+    if (state.turnPhase === 'discard' && player.hand.length <= MAX_HAND_SIZE) {
+      return GameEngine.endTurn(state);
+    }
 
     return state;
   }
