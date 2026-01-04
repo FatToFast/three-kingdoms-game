@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import type { GameState } from '@/types/game';
+import { CARDS_PER_DRAW } from '@/types/game';
 import type { CardInHand } from '@/types/card';
 import { GameEngine } from '@/lib/game/engine';
 import { io, type Socket } from 'socket.io-client';
@@ -149,7 +150,7 @@ const ensureSocket = async (
     set({ connectionStatus: 'connected' });
 
     const { mode, roomCode } = get();
-    if (mode === 'online' && roomCode) {
+    if (mode === 'online' && roomCode && socket) {
       socket.emit('room:join', { roomCode });
       const storedSeat = readSeatToken(roomCode);
       if (storedSeat) {
@@ -434,9 +435,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const currentPlayer = getCurrentPlayerFromState(gameState);
     if (!currentPlayer) return;
 
-    // 영토 보너스 계산 (기본 2장 + 보너스)
+    // 영토 보너스 계산 (기본 CARDS_PER_DRAW장 + 보너스)
     const territoryBonus = GameEngine.calculateTerritoryBonus(gameState, currentPlayer.id);
-    const totalDraw = 2 + territoryBonus.bonusDraw;
+    const totalDraw = CARDS_PER_DRAW + territoryBonus.bonusDraw;
 
     let newState = GameEngine.drawCards({ ...gameState }, currentPlayer.id, totalDraw, {
       ensureNonGeneral: true,

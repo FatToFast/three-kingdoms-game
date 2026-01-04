@@ -28,11 +28,16 @@ export function createDeck(): CardInHand[] {
 // 덱 셔플 (Fisher-Yates 알고리즘)
 export function shuffleDeck<T>(deck: T[]): T[] {
   const shuffled = [...deck];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
+  shuffleInPlace(shuffled);
   return shuffled;
+}
+
+// In-place 셔플 (배열 복사 없이 직접 셔플)
+export function shuffleInPlace<T>(deck: T[]): void {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
 }
 
 // 카드 뽑기

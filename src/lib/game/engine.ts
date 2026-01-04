@@ -2,9 +2,11 @@
 
 import type { Card, CardInHand, GeneralCard } from '@/types/card';
 import type { GameState, CombatResult, GameLogEntry, TurnPhase } from '@/types/game';
-import type { Player, ACTIONS_PER_TURN, INITIAL_HAND_SIZE, MAX_HAND_SIZE } from '@/types/player';
+import { CARDS_PER_DRAW } from '@/types/game';
+import type { Player } from '@/types/player';
+import { ACTIONS_PER_TURN, INITIAL_HAND_SIZE } from '@/types/player';
 import type { Territory } from '@/types/territory';
-import { createDeck, shuffleDeck, drawCards } from '@/data/cards';
+import { createDeck, shuffleDeck, shuffleInPlace, drawCards } from '@/data/cards';
 import {
   initialTerritories,
   VICTORY_TERRITORIES_46,
@@ -18,8 +20,13 @@ import {
   type Region,
 } from '@/data/territories';
 import { nanoid } from 'nanoid';
+import { MAX_HAND_SIZE } from '@/types/player';
 
 const PLAYER_COLORS = ['#EF4444', '#3B82F6', '#22C55E', '#F59E0B'];
+
+// 페이즈 순서 상수 (성능 최적화: 함수 호출마다 배열 생성 방지)
+const TURN_PHASES: readonly TurnPhase[] = ['draw', 'action', 'discard'] as const;
+const PHASE_INDEX_MAP: Record<TurnPhase, number> = { draw: 0, action: 1, discard: 2 };
 
 export class GameEngine {
   // 게임 초기화
@@ -40,7 +47,7 @@ export class GameEngine {
 
     // 플레이어 생성 및 초기 카드 배분
     const players: Player[] = playerNames.map((name, index) => {
-      const { drawn, remaining } = drawCards(deck, 5);
+      const { drawn, remaining } = drawCards(deck, INITIAL_HAND_SIZE);
       deck.splice(0, deck.length, ...remaining);
 
       return {
@@ -98,7 +105,7 @@ export class GameEngine {
   static drawCards(
     state: GameState,
     playerId: string,
-    count: number = 2,
+    count: number = CARDS_PER_DRAW,
     options?: { ensureNonGeneral?: boolean }
   ): GameState {
     const player = state.players.find((p) => p.id === playerId);
@@ -118,9 +125,12 @@ export class GameEngine {
 
     // 덱이 부족하면 버린 카드 더미 셔플해서 이어서 뽑기
     if (remaining > 0 && state.discardPile.length > 0) {
-      const reshuffled = shuffleDeck(
-        state.discardPile.map((card) => ({ ...card, instanceId: nanoid() }))
-      ) as CardInHand[];
+      // 새 인스턴스 ID 부여 후 in-place 셔플 (이중 복사 방지)
+      const reshuffled = state.discardPile.map((card) => ({
+        ...card,
+        instanceId: nanoid(),
+      })) as CardInHand[];
+      shuffleInPlace(reshuffled);
       state.discardPile = [];
       state.deck = reshuffled;
       GameEngine.addLog(state, 'system', '덱을 다시 섞었습니다.');

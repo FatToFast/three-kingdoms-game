@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { GameEngine } from '@/lib/game/engine';
 import { PLAYER_COLORS } from '@/types/player';
 import type { GameState } from '@/types/game';
+import { CARDS_PER_DRAW } from '@/types/game';
 
 type SocketServer = HttpServer & {
   io?: Server;
@@ -460,7 +461,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponseWithSoc
             const currentPlayer = state.players[state.currentPlayerIndex];
             // 영토 보너스 계산하여 드로우 수 결정
             const territoryBonus = GameEngine.calculateTerritoryBonus(state, currentPlayer.id);
-            const drawCount = Math.max(1, 2 + territoryBonus.bonusDraw);
+            const drawCount = Math.max(1, CARDS_PER_DRAW + territoryBonus.bonusDraw);
             room.gameState = GameEngine.drawCards(state, currentPlayer.id, drawCount, {
               ensureNonGeneral: true,
             });
