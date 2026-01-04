@@ -17,6 +17,7 @@ interface TerritoryProps {
 // 46개 도시에 맞게 크기 조정
 const TERRITORY_RADIUS = 22;
 const TERRITORY_RADIUS_OUTER = 26;
+const OWNER_RING_RADIUS = 28;
 
 export function Territory({
   territory,
@@ -27,7 +28,8 @@ export function Territory({
   onClick,
 }: TerritoryProps) {
   const baseColor = territoryColors[territory.id];
-  const ownerColor = owner?.color || baseColor || '#9CA3AF';
+  // 소유자가 있으면 플레이어 색상, 없으면 지역 기본 색상
+  const fillColor = owner ? owner.color : (baseColor || '#9CA3AF');
 
   return (
     <motion.g
@@ -36,12 +38,25 @@ export function Territory({
       whileHover={{ scale: 1.15 }}
       whileTap={{ scale: 0.95 }}
     >
+      {/* 소유자 외곽 링 (플레이어 색상 강조) */}
+      {owner && (
+        <circle
+          cx={territory.position.x}
+          cy={territory.position.y}
+          r={OWNER_RING_RADIUS}
+          fill="none"
+          stroke={owner.color}
+          strokeWidth={4}
+          opacity={0.8}
+        />
+      )}
+
       {/* 영토 영역 (원형) - 축소된 크기 */}
       <motion.circle
         cx={territory.position.x}
         cy={territory.position.y}
         r={TERRITORY_RADIUS}
-        fill={ownerColor}
+        fill={fillColor}
         stroke={isSelected ? '#FBBF24' : isAttackable ? '#EF4444' : '#374151'}
         strokeWidth={isSelected || isAttackable ? 3 : 1.5}
         initial={{ scale: 0 }}
@@ -126,16 +141,27 @@ export function Territory({
         </g>
       )}
 
-      {/* 소유자 표시 - 축소 */}
+      {/* 소유자 이니셜 표시 */}
       {owner && (
-        <circle
-          cx={territory.position.x}
-          cy={territory.position.y + 20}
-          r={5}
-          fill={owner.color}
-          stroke="white"
-          strokeWidth={1}
-        />
+        <g>
+          <circle
+            cx={territory.position.x}
+            cy={territory.position.y + 22}
+            r={7}
+            fill={owner.color}
+            stroke="white"
+            strokeWidth={1.5}
+          />
+          <text
+            x={territory.position.x}
+            y={territory.position.y + 25}
+            textAnchor="middle"
+            fontSize="8"
+            className="fill-white font-bold pointer-events-none select-none"
+          >
+            {owner.name.charAt(0).toUpperCase()}
+          </text>
+        </g>
       )}
     </motion.g>
   );
