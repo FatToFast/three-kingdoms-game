@@ -101,6 +101,6 @@ export interface GameOptions {
 }
 
 // 게임 상수
-export const VICTORY_TERRITORIES = 18;
-export const VICTORY_VALUE = 30;
+export const VICTORY_TERRITORIES = 46; // 전체 지도 장악
+export const VICTORY_VALUE = 999; // 비활성화 (전체 점령만 유효)
 export const CARDS_PER_DRAW = 2;

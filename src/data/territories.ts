@@ -528,9 +528,10 @@ export const territoryColors: Record<string, string> = Object.fromEntries(
 // 주요 도시 (수도급)
 export const majorCities = ['luoyang', 'xuchang', 'ye', 'changan', 'jianye', 'chengdu', 'xiangyang'];
 
-// 승리 조건 조정 (46개 도시 기준, 선두 가속 방지를 위해 상향)
-export const VICTORY_TERRITORIES_46 = 20; // 20개 영토 (기존 18)
-export const VICTORY_VALUE_46 = 34; // 영토 가치 합 34 (기존 30)
+// 승리 조건: 전체 지도 장악 (46개 도시 전부 점령)
+export const TOTAL_TERRITORIES = 46;
+export const VICTORY_TERRITORIES_46 = TOTAL_TERRITORIES; // 전체 영토 점령
+export const VICTORY_VALUE_46 = 999; // 가치 기준 승리 비활성화 (전체 점령만 유효)
 
 // 승리 확정에 필요한 유지 턴 수 (선두 가속 방지)
 // 승리 조건 달성 후 이 턴 수만큼 유지해야 승리 확정

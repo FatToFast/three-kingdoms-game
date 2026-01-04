@@ -883,7 +883,7 @@ export class GameEngine {
   }
 
   // 승리 조건 체크 (46개 도시 기준, 성능 최적화: 단일 순회)
-  // 승리 조건: 18개 이상 영토 또는 총 가치 30 이상 또는 혼자 남은 경우
+  // 승리 조건: 전체 지도 장악 (46개 영토 전부 점령) 또는 혼자 남은 경우
   // 동점 처리: 현재 턴 플레이어 우선, 그 다음 플레이어 순서대로
   static checkVictory(state: GameState): string | null {
     const VICTORY_TERRITORIES = VICTORY_TERRITORIES_46;

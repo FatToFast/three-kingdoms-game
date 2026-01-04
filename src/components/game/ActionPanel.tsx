@@ -3,6 +3,7 @@
 import { Button } from '../ui/Button';
 import { useGameStore } from '@/stores/gameStore';
 import type { Player } from '@/types/player';
+import { MAX_HAND_SIZE } from '@/types/player';
 import type { TurnPhase } from '@/types/game';
 
 interface ActionPanelProps {
@@ -22,6 +23,7 @@ export function ActionPanel({ player, phase, isMyTurn }: ActionPanelProps) {
     attack,
     playCard,
     deployGeneral,
+    discardCard,
     clearSelectedCards,
     getAttackableTerritories,
   } = useGameStore();
@@ -162,13 +164,39 @@ export function ActionPanel({ player, phase, isMyTurn }: ActionPanelProps) {
         </div>
       )}
 
-      {phase === 'discard' && (
-        <div className="px-2 md:px-4 py-2 md:py-3 space-y-1">
-          <p className="text-xs md:text-sm text-red-600">
-            ⚠️ 손패 초과! 버리기: {player.hand.length - 7}장
-          </p>
-        </div>
-      )}
+      {phase === 'discard' && (() => {
+        const cardsToDiscard = player.hand.length - MAX_HAND_SIZE;
+        const canDiscard = selectedCardIds.length > 0 && selectedCardIds.length <= cardsToDiscard;
+
+        const handleDiscard = () => {
+          // 선택된 카드들을 하나씩 버리기
+          selectedCardIds.forEach((cardId) => {
+            discardCard(cardId);
+          });
+          clearSelectedCards();
+        };
+
+        return (
+          <div className="px-2 md:px-4 py-2 md:py-3 space-y-2">
+            <p className="text-xs md:text-sm text-red-600">
+              ⚠️ 손패 초과! {cardsToDiscard}장 버리기 (선택: {selectedCardIds.length}장)
+            </p>
+            {selectedCardIds.length > 0 && (
+              <div className="text-[10px] md:text-xs text-gray-600 truncate">
+                🃏 {selectedCards.map((c) => c.nameKo).join(', ')}
+              </div>
+            )}
+            <Button
+              onClick={handleDiscard}
+              disabled={!canDiscard}
+              variant={canDiscard ? 'danger' : 'secondary'}
+              className="w-full py-1.5 md:py-2 text-xs md:text-sm"
+            >
+              🗑️ 선택 카드 버리기
+            </Button>
+          </div>
+        );
+      })()}
     </div>
   );
 }

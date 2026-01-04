@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
+import { MobileCardDetail } from './MobileCardDetail';
 import type { CardInHand } from '@/types/card';
 import { MAX_HAND_SIZE, SOFT_HAND_SIZE } from '@/types/player';
 import { cn } from '@/lib/utils';
@@ -125,6 +126,13 @@ export function CardHand({
             상대 턴
           </span>
         </div>
+      )}
+
+      {/* 모바일: 선택된 카드 상세 정보 */}
+      {isMobile && selectedCardIds.length > 0 && (
+        <MobileCardDetail
+          cards={cards.filter(c => selectedCardIdSet.has(c.instanceId))}
+        />
       )}
     </div>
   );
