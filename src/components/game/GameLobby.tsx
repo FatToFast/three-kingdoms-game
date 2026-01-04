@@ -5,9 +5,15 @@ import { motion } from 'framer-motion';
 import { Button } from '../ui/Button';
 import { useGameStore } from '@/stores/gameStore';
 import { cn } from '@/lib/utils';
+import type { AIDifficulty } from '@/lib/game/ai';
 
 const PLAYER_COLORS = ['#EF4444', '#3B82F6', '#22C55E', '#F59E0B'];
 const DEFAULT_NAMES = ['플레이어 1', '플레이어 2', '플레이어 3', '플레이어 4'];
+const AI_DIFFICULTIES: { value: AIDifficulty; label: string; desc: string }[] = [
+  { value: 'easy', label: '쉬움', desc: '초보자용' },
+  { value: 'normal', label: '보통', desc: '균형잡힌 난이도' },
+  { value: 'hard', label: '어려움', desc: '전략적 AI' },
+];
 
 export function GameLobby() {
   const {
@@ -26,10 +32,14 @@ export function GameLobby() {
   } = useGameStore();
 
   const [playerCount, setPlayerCount] = useState(2);
+  const [humanPlayerCount, setHumanPlayerCount] = useState(1);
+  const [aiDifficulty, setAiDifficulty] = useState<AIDifficulty>('normal');
   const [playerNames, setPlayerNames] = useState<string[]>(DEFAULT_NAMES);
   const [onlineName, setOnlineName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [onlinePlayerCount, setOnlinePlayerCount] = useState(2);
+
+  const aiPlayerCount = playerCount - humanPlayerCount;
 
   const isOnline = mode === 'online';
   const isHost = roomInfo?.hostSeatIndex !== null && roomInfo?.hostSeatIndex === seatIndex;
@@ -47,8 +57,8 @@ export function GameLobby() {
   };
 
   const handleStart = () => {
-    const names = playerNames.slice(0, playerCount).map((name, i) => name || DEFAULT_NAMES[i]);
-    initGame(names);
+    const names = playerNames.slice(0, humanPlayerCount).map((name, i) => name || DEFAULT_NAMES[i]);
+    initGame(names, aiPlayerCount, aiDifficulty);
   };
 
   return (
@@ -95,16 +105,22 @@ export function GameLobby() {
 
         {!isOnline && (
           <>
-            {/* 플레이어 수 선택 */}
-            <div className="mb-6">
+            {/* 총 플레이어 수 선택 */}
+            <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                👥 플레이어 수
+                👥 총 플레이어 수
               </label>
               <div className="flex gap-2">
                 {[2, 3, 4].map((count) => (
                   <button
                     key={count}
-                    onClick={() => setPlayerCount(count)}
+                    onClick={() => {
+                      setPlayerCount(count);
+                      // 인간 플레이어 수가 총 플레이어 수를 초과하지 않도록
+                      if (humanPlayerCount > count) {
+                        setHumanPlayerCount(count);
+                      }
+                    }}
                     className={cn(
                       'flex-1 py-3 rounded-lg font-bold text-lg transition-all',
                       playerCount === count
@@ -118,12 +134,66 @@ export function GameLobby() {
               </div>
             </div>
 
+            {/* 인간 플레이어 수 선택 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                🧑 인간 플레이어 수 (나머지는 AI)
+              </label>
+              <div className="flex gap-2">
+                {Array.from({ length: playerCount }, (_, i) => i + 1).map((count) => (
+                  <button
+                    key={count}
+                    onClick={() => setHumanPlayerCount(count)}
+                    className={cn(
+                      'flex-1 py-2 rounded-lg font-semibold transition-all',
+                      humanPlayerCount === count
+                        ? 'bg-blue-500 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    )}
+                  >
+                    {count}명
+                  </button>
+                ))}
+              </div>
+              {aiPlayerCount > 0 && (
+                <p className="mt-2 text-sm text-amber-600">
+                  🤖 AI 플레이어 {aiPlayerCount}명이 참가합니다
+                </p>
+              )}
+            </div>
+
+            {/* AI 난이도 선택 */}
+            {aiPlayerCount > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  🎯 AI 난이도
+                </label>
+                <div className="flex gap-2">
+                  {AI_DIFFICULTIES.map((diff) => (
+                    <button
+                      key={diff.value}
+                      onClick={() => setAiDifficulty(diff.value)}
+                      className={cn(
+                        'flex-1 py-2 rounded-lg font-semibold transition-all',
+                        aiDifficulty === diff.value
+                          ? 'bg-purple-500 text-white shadow-lg'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      )}
+                    >
+                      <div>{diff.label}</div>
+                      <div className="text-xs opacity-75">{diff.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 플레이어 이름 입력 */}
             <div className="mb-6 space-y-3">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 📝 플레이어 이름
               </label>
-              {Array.from({ length: playerCount }).map((_, index) => (
+              {Array.from({ length: humanPlayerCount }).map((_, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, x: -20 }}

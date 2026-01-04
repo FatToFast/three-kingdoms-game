@@ -7,6 +7,9 @@ export interface Position {
   y: number;
 }
 
+// 배치된 무장 카드 타입 (instanceId 포함)
+export type GarrisonCard = GeneralCard & { instanceId: string };
+
 export interface Territory {
   id: string;
   name: string;
@@ -15,7 +18,7 @@ export interface Territory {
   position: Position;
   adjacentTo: string[]; // 인접 영토 ID
   owner: string | null; // 소유 플레이어 ID
-  garrison: GeneralCard[]; // 배치된 무장
+  garrison: GarrisonCard[]; // 배치된 무장 (instanceId 포함)
   defenseBonus: number; // 지형 방어 보너스
 }
 

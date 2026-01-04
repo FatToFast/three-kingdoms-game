@@ -5,6 +5,7 @@ import type { GameState } from '@/types/game';
 import { CARDS_PER_DRAW } from '@/types/game';
 import type { CardInHand } from '@/types/card';
 import { GameEngine } from '@/lib/game/engine';
+import { getAI, getAIName, type AIDifficulty } from '@/lib/game/ai';
 import { io, type Socket } from 'socket.io-client';
 
 type MultiplayerMode = 'local' | 'online';
@@ -51,8 +52,12 @@ interface GameStore {
   seatIndex: number | null;
 
   // 게임 초기화
-  initGame: (playerNames: string[]) => void;
+  initGame: (playerNames: string[], aiPlayerCount?: number, aiDifficulty?: AIDifficulty) => void;
   resetGame: () => void;
+
+  // AI
+  aiDifficulty: AIDifficulty;
+  processAITurn: () => void;
 
   // 멀티플레이어
   setMode: (mode: MultiplayerMode) => void;
@@ -269,16 +274,64 @@ export const useGameStore = create<GameStore>((set, get) => ({
   connectionError: null,
   playerId: null,
   seatIndex: null,
+  aiDifficulty: 'normal',
 
-  initGame: (playerNames) => {
+  initGame: (playerNames, aiPlayerCount = 0, aiDifficulty = 'normal') => {
     if (get().mode === 'online') return;
-    const gameState = GameEngine.initializeGame(playerNames);
+
+    // AI 플레이어 이름 생성
+    const allPlayerNames = [...playerNames];
+    for (let i = 0; i < aiPlayerCount; i++) {
+      allPlayerNames.push(getAIName(i));
+    }
+
+    const gameState = GameEngine.initializeGame(allPlayerNames);
+
+    // AI 플레이어 표시
+    for (let i = playerNames.length; i < allPlayerNames.length; i++) {
+      gameState.players[i].isAI = true;
+    }
+
     set({
       gameState,
       selectedCardIds: [],
       selectedTerritoryId: null,
       selectedTacticianTargetId: null,
+      aiDifficulty,
     });
+
+    // 첫 번째 플레이어가 AI인 경우 AI 턴 처리
+    setTimeout(() => {
+      get().processAITurn();
+    }, 500);
+  },
+
+  processAITurn: () => {
+    const { gameState, aiDifficulty } = get();
+    if (!gameState || gameState.phase !== 'playing') return;
+
+    const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+    if (!currentPlayer?.isAI) return;
+
+    // AI 턴 처리 (약간의 딜레이로 자연스럽게)
+    set({ isLoading: true });
+
+    setTimeout(() => {
+      const ai = getAI(aiDifficulty);
+      const newState = ai.executeFullTurn({ ...gameState });
+
+      set({
+        gameState: newState,
+        isLoading: false,
+        selectedCardIds: [],
+        selectedTerritoryId: null,
+      });
+
+      // 다음 플레이어도 AI인 경우 계속 처리
+      setTimeout(() => {
+        get().processAITurn();
+      }, 800);
+    }, 1000);
   },
 
   resetGame: () => {
@@ -459,6 +512,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       selectedTerritoryId: null,
       selectedTacticianTargetId: null,
     });
+
+    // 다음 플레이어가 AI인 경우 AI 턴 처리
+    setTimeout(() => {
+      get().processAITurn();
+    }, 500);
   },
 
   attack: () => {

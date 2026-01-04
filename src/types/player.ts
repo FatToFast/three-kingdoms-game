@@ -14,6 +14,7 @@ export interface Player {
   isEliminated: boolean; // 탈락 여부
   alliances: string[]; // 동맹 플레이어 ID
   resources: number; // 병력 자원
+  isAI?: boolean; // AI 플레이어 여부
 }
 
 export const PLAYER_COLORS = [

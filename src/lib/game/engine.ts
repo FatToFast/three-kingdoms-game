@@ -1,11 +1,11 @@
 // 게임 엔진 핵심 로직
 
-import type { Card, CardInHand, GeneralCard } from '@/types/card';
+import type { Card, CardInHand } from '@/types/card';
 import type { GameState, CombatResult, GameLogEntry, TurnPhase } from '@/types/game';
 import { CARDS_PER_DRAW } from '@/types/game';
 import type { Player } from '@/types/player';
 import { ACTIONS_PER_TURN, INITIAL_HAND_SIZE } from '@/types/player';
-import type { Territory } from '@/types/territory';
+import type { Territory, GarrisonCard } from '@/types/territory';
 import { createDeck, shuffleDeck, shuffleInPlace, drawCards } from '@/data/cards';
 import {
   initialTerritories,
@@ -253,7 +253,7 @@ export class GameEngine {
     return state;
   }
 
-  // 공격 시작
+  // 공격 시작 (action 페이즈에서만 가능, 진행 중인 전투 없어야 함)
   static startAttack(
     state: GameState,
     attackerId: string,
@@ -261,6 +261,18 @@ export class GameEngine {
     cardInstanceIds: string[],
     tacticianTargetInstanceId: string | null = null
   ): GameState {
+    // action 페이즈에서만 공격 가능
+    if (state.turnPhase !== 'action') {
+      GameEngine.addLog(state, attackerId, 'action 페이즈에서만 공격할 수 있습니다.');
+      return state;
+    }
+
+    // 진행 중인 전투가 있으면 새 공격 불가
+    if (state.combat !== null) {
+      GameEngine.addLog(state, attackerId, '진행 중인 전투를 먼저 완료해주세요.');
+      return state;
+    }
+
     const attacker = state.players.find((p) => p.id === attackerId);
     const targetTerritory = state.territories.find((t) => t.id === targetTerritoryId);
 
@@ -278,9 +290,10 @@ export class GameEngine {
       return state;
     }
 
-    // 인접 영토 확인
+    // 인접 영토 확인 (성능 최적화: Map 캐시 사용)
+    const territoryMap = new Map(state.territories.map((t) => [t.id, t]));
     const hasAdjacentTerritory = attacker.territories.some((tId) => {
-      const t = state.territories.find((ter) => ter.id === tId);
+      const t = territoryMap.get(tId);
       return t?.adjacentTo.includes(targetTerritoryId);
     });
 
@@ -289,16 +302,29 @@ export class GameEngine {
       return state;
     }
 
-    const selectedCards = attacker.hand.filter((c) => cardInstanceIds.includes(c.instanceId));
-    const attackCards = selectedCards.filter((c) => c.type !== 'tactician');
+    // 성능 최적화: Set으로 카드 ID 관리
+    const cardIdSet = new Set(cardInstanceIds);
+    const selectedCards = attacker.hand.filter((c) => cardIdSet.has(c.instanceId));
+
+    // 공격에 사용 가능한 카드 타입: general, strategy (공격용)
+    const validAttackTypes = new Set(['general', 'strategy']);
+    const attackCards = selectedCards.filter((c) => c.type !== 'tactician' && validAttackTypes.has(c.type));
     const tacticianCards = selectedCards.filter((c) => c.type === 'tactician');
     const tacticianCard = tacticianCards[0] ?? null;
+
+    // 유효하지 않은 카드 타입 검증 (resource, event는 공격에 사용 불가)
+    const invalidCards = selectedCards.filter((c) => c.type !== 'tactician' && !validAttackTypes.has(c.type));
+    if (invalidCards.length > 0) {
+      GameEngine.addLog(state, attackerId, '자원/이벤트 카드는 공격에 사용할 수 없습니다.');
+      return state;
+    }
 
     if (attackCards.length === 0) {
       GameEngine.addLog(state, attackerId, '공격할 카드를 선택해주세요.');
       return state;
     }
 
+    // 책사 카드 1장 제한
     if (tacticianCards.length > 1) {
       GameEngine.addLog(state, attackerId, '책사 카드는 1장만 사용할 수 있습니다.');
       return state;
@@ -313,8 +339,8 @@ export class GameEngine {
       return state;
     }
 
-    // 손패에서 카드 제거
-    attacker.hand = attacker.hand.filter((c) => !cardInstanceIds.includes(c.instanceId));
+    // 손패에서 카드 제거 (성능 최적화: Set 사용)
+    attacker.hand = attacker.hand.filter((c) => !cardIdSet.has(c.instanceId));
 
     state.combat = {
       attackerId,
@@ -343,7 +369,7 @@ export class GameEngine {
       );
     }
 
-    // 주인 없는 영토는 바로 점령
+    // 주인 없는 영토는 방어자 없이 바로 전투 해결 (지형 방어 보너스만 적용)
     if (!targetTerritory.owner) {
       return GameEngine.resolveCombat(state);
     }
@@ -351,16 +377,36 @@ export class GameEngine {
     return state;
   }
 
-  // 방어
+  // 방어 (general/strategy 카드만 사용 가능)
   static defend(state: GameState, cardInstanceIds: string[]): GameState {
     const combat = state.combat;
     if (!combat) return state;
 
+    // defending 페이즈에서만 방어 가능
+    if (combat.phase !== 'defending') {
+      return state;
+    }
+
     const defender = state.players.find((p) => p.id === combat.defenderId);
     if (!defender) return state;
 
-    const defenseCards = defender.hand.filter((c) => cardInstanceIds.includes(c.instanceId));
-    defender.hand = defender.hand.filter((c) => !cardInstanceIds.includes(c.instanceId));
+    // 성능 최적화: Set으로 카드 ID 관리
+    const cardIdSet = new Set(cardInstanceIds);
+    const selectedCards = defender.hand.filter((c) => cardIdSet.has(c.instanceId));
+
+    // 방어에 사용 가능한 카드 타입: general, strategy (방어용)
+    const validDefenseTypes = new Set(['general', 'strategy']);
+    const defenseCards = selectedCards.filter((c) => validDefenseTypes.has(c.type));
+
+    // 유효하지 않은 카드 타입 검증 (resource, event, tactician은 방어에 사용 불가)
+    const invalidCards = selectedCards.filter((c) => !validDefenseTypes.has(c.type));
+    if (invalidCards.length > 0) {
+      GameEngine.addLog(state, combat.defenderId, '자원/이벤트/책사 카드는 방어에 사용할 수 없습니다.');
+      return state;
+    }
+
+    // 손패에서 카드 제거 (성능 최적화: Set 사용)
+    defender.hand = defender.hand.filter((c) => !cardIdSet.has(c.instanceId));
 
     combat.defenseCards = defenseCards;
     combat.phase = 'resolving';
@@ -378,9 +424,19 @@ export class GameEngine {
     return GameEngine.resolveCombat(state);
   }
 
-  // 전투 해결
+  // 전투 해결 (resolving 페이즈에서만 실행, 중복 호출 방지)
   static resolveCombat(state: GameState): GameState {
     if (!state.combat) return state;
+
+    // 이미 resolved 상태면 중복 실행 방지
+    if (state.combat.phase === 'resolved') {
+      return state;
+    }
+
+    // resolving 페이즈에서만 실행 가능
+    if (state.combat.phase !== 'resolving') {
+      return state;
+    }
 
     const {
       attackerId,
@@ -394,42 +450,51 @@ export class GameEngine {
 
     if (!territory) return state;
 
-    // 공격력 계산
-    let attackPower = attackCards.reduce((sum, card) => {
-      if (card.type === 'general') return sum + card.attack;
-      if (card.type === 'strategy' && card.effect === 'SIEGE') return sum + card.value;
-      if (card.type === 'strategy' && card.effect === 'AMBUSH') return sum + card.value;
-      return sum;
-    }, 0);
+    // 성능 최적화: 단일 루프로 공격력/화공 효과 계산
+    let attackPower = 0;
+    let burnEffect = 0;
+    for (const card of attackCards) {
+      if (card.type === 'general') {
+        attackPower += card.attack;
+      } else if (card.type === 'strategy') {
+        if (card.effect === 'SIEGE' || card.effect === 'AMBUSH') {
+          attackPower += card.value;
+        } else if (card.effect === 'BURN') {
+          burnEffect += card.value;
+        }
+      }
+    }
 
+    // 책사 보너스 적용
     const tacticianBonus =
       tacticianCard?.type === 'tactician' &&
       tacticianTargetInstanceId &&
       attackCards.some((card) => card.instanceId === tacticianTargetInstanceId)
         ? tacticianCard.tactics
         : 0;
-
     attackPower += tacticianBonus;
 
-    // 방어력 계산 (지형 보너스 포함)
+    // 방어력 계산: 지형 보너스 + 배치된 무장 + 방어 카드 (단일 루프)
     let defensePower = territory.defenseBonus;
 
     // 배치된 무장 방어력
-    defensePower += territory.garrison.reduce((sum, g) => sum + g.defense, 0);
+    for (const g of territory.garrison) {
+      defensePower += g.defense;
+    }
 
-    // 방어 카드 방어력
-    defensePower += defenseCards.reduce((sum, card) => {
-      if (card.type === 'general') return sum + card.defense;
-      if (card.type === 'strategy' && card.effect === 'REINFORCE') return sum + card.value;
-      return sum;
-    }, 0);
+    // 방어 카드 방어력 (단일 루프로 최적화)
+    for (const card of defenseCards) {
+      if (card.type === 'general') {
+        defensePower += card.defense;
+      } else if (card.type === 'strategy' && card.effect === 'REINFORCE') {
+        defensePower += card.value;
+      }
+    }
 
-    // 화공 효과 적용
-    const burnEffect = attackCards
-      .filter((c) => c.type === 'strategy' && c.effect === 'BURN')
-      .reduce((sum, c) => sum + (c as any).value, 0);
+    // 화공 효과 적용 (방어력 감소, 최소 0)
     defensePower = Math.max(0, defensePower - burnEffect);
 
+    // 승패 판정: 공격력이 방어력보다 높아야 승리 (동점은 수비 승리)
     const attackerWins = attackPower > defensePower;
 
     state.combat.result = {
@@ -458,6 +523,11 @@ export class GameEngine {
             GameEngine.addLog(state, previousOwner, '모든 영토를 잃고 탈락했습니다.');
           }
         }
+      }
+
+      // 배치된 무장(garrison)을 버린 카드 더미로 이동 (카드 소멸 방지)
+      if (territory.garrison.length > 0) {
+        state.discardPile.push(...territory.garrison);
       }
 
       territory.owner = attackerId;
@@ -523,7 +593,7 @@ export class GameEngine {
     }
 
     player.hand.splice(cardIndex, 1);
-    territory.garrison.push(card as GeneralCard);
+    territory.garrison.push(card as GarrisonCard);
     player.actions--;
 
     GameEngine.addLog(
