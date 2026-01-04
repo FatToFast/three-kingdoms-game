@@ -30,14 +30,14 @@ export function GameLog({ logs, players, className }: GameLogProps) {
   };
 
   return (
-    <div className={cn('flex flex-col bg-white rounded-lg shadow', className)}>
-      <div className="px-4 py-2 border-b bg-gray-50 rounded-t-lg">
+    <div className={cn('flex flex-col bg-white rounded-lg shadow min-h-0', className)}>
+      <div className="px-4 py-2 border-b bg-gray-50 rounded-t-lg flex-shrink-0">
         <h3 className="font-bold text-sm">📜 게임 로그</h3>
       </div>
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-2 space-y-1 max-h-60"
+        className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0"
       >
         {logs.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-4">

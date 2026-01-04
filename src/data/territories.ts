@@ -454,7 +454,7 @@ export const initialTerritories: (Omit<Territory, 'owner' | 'garrison'> & { regi
     region: 'yizhou',
     value: 1,
     position: { x: 140, y: 500 },
-    adjacentTo: ['jiangzhou', 'wuling', 'jiaozhi_city'],
+    adjacentTo: ['jiangzhou', 'wuling', 'jiaozhi_city', 'rinan'],
     defenseBonus: 2, // 오지
   },
 
@@ -466,7 +466,7 @@ export const initialTerritories: (Omit<Territory, 'owner' | 'garrison'> & { regi
     region: 'jiaozhi',
     value: 1,
     position: { x: 280, y: 580 },
-    adjacentTo: ['nanzhong', 'guiyang', 'poyang', 'nanhai'],
+    adjacentTo: ['nanzhong', 'guiyang', 'poyang', 'nanhai', 'rinan'],
     defenseBonus: 1,
   },
   {
@@ -528,9 +528,13 @@ export const territoryColors: Record<string, string> = Object.fromEntries(
 // 주요 도시 (수도급)
 export const majorCities = ['luoyang', 'xuchang', 'ye', 'changan', 'jianye', 'chengdu', 'xiangyang'];
 
-// 승리 조건 조정 (46개 도시 기준, 30-40분 플레이)
-export const VICTORY_TERRITORIES_46 = 18; // 18개 영토
-export const VICTORY_VALUE_46 = 30; // 영토 가치 합 30
+// 승리 조건 조정 (46개 도시 기준, 선두 가속 방지를 위해 상향)
+export const VICTORY_TERRITORIES_46 = 20; // 20개 영토 (기존 18)
+export const VICTORY_VALUE_46 = 34; // 영토 가치 합 34 (기존 30)
+
+// 승리 확정에 필요한 유지 턴 수 (선두 가속 방지)
+// 승리 조건 달성 후 이 턴 수만큼 유지해야 승리 확정
+export const VICTORY_CONFIRMATION_TURNS = 1;
 
 // 플레이어 시작 위치 - 서로 최대한 멀리 떨어진 전략적 위치
 // 2인: 대각선 반대편 (요동-남해)
@@ -549,6 +553,22 @@ export const TERRITORY_DRAW_BONUS_THRESHOLD = 5;
 
 // 영토 수에 따른 추가 행동력 (10개마다 +1)
 export const TERRITORY_ACTION_BONUS_THRESHOLD = 10;
+
+// ===== 보너스 상한 (선두 가속 방지) =====
+export const BONUS_CAPS = {
+  DRAW: 2, // 영토 수 기반 카드 보너스 상한
+  ACTION: 1, // 영토 수 기반 행동력 보너스 상한
+} as const;
+
+// ===== 지역 지배 보너스 체감 =====
+// 첫 번째 지역: 100%, 두 번째 이후: 50%
+export const REGION_BONUS_DIMINISHING_RATE = 0.5;
+
+// ===== 과확장 페널티 =====
+export const OVEREXPANSION = {
+  THRESHOLD: 16, // 이 영토 수 이상이면 페널티
+  PENALTY: { draw: 0, action: -1, description: '과확장: 행동력 -1 (영토 16개 이상)' },
+} as const;
 
 // 지역별 영토 목록 (지역 지배 보너스용)
 export const REGION_TERRITORIES: Record<Region, string[]> = {
@@ -575,7 +595,42 @@ export const REGION_DOMINATION_BONUS: Record<Region, { draw: number; action: num
 // ===== 영토 분산 페널티 시스템 =====
 // 연결되지 않은 영토 그룹이 있으면 페널티 적용
 // 2개 그룹: 카드 -1, 3개 이상: 카드 -1, 행동력 -1
+
+// 분산 페널티 적용 임계값
+export const FRAGMENTATION_THRESHOLD = {
+  MINOR: 2, // 경미한 분산 (2개 그룹)
+  SEVERE: 3, // 심각한 분산 (3개 이상 그룹)
+} as const;
+
 export const FRAGMENTATION_PENALTY = {
-  2: { draw: -1, action: 0, description: '영토 분산: 카드 -1장 (2개 그룹)' },
-  3: { draw: -1, action: -1, description: '영토 분산: 카드 -1장, 행동력 -1 (3개+ 그룹)' },
+  [FRAGMENTATION_THRESHOLD.MINOR]: { draw: -1, action: 0, description: '영토 분산: 카드 -1장 (2개 그룹)' },
+  [FRAGMENTATION_THRESHOLD.SEVERE]: { draw: -1, action: -1, description: '영토 분산: 카드 -1장, 행동력 -1 (3개+ 그룹)' },
 };
+
+// ===== 양방향 인접 관계 맵 (BFS에서 방향성 문제 해결) =====
+// adjacentTo 데이터가 비대칭일 수 있으므로, 양방향 연결을 보장하는 맵 생성
+export const buildBidirectionalAdjacencyMap = (
+  territories: readonly { id: string; adjacentTo: string[] }[]
+): Map<string, Set<string>> => {
+  const adjacencyMap = new Map<string, Set<string>>();
+
+  // 모든 영토 초기화
+  for (const t of territories) {
+    adjacencyMap.set(t.id, new Set());
+  }
+
+  // 양방향 연결 추가
+  for (const t of territories) {
+    const neighbors = adjacencyMap.get(t.id)!;
+    for (const adjId of t.adjacentTo) {
+      neighbors.add(adjId);
+      // 역방향도 추가 (비대칭 데이터 보정)
+      adjacencyMap.get(adjId)?.add(t.id);
+    }
+  }
+
+  return adjacencyMap;
+};
+
+// 초기 영토 데이터 기반 양방향 인접 맵 (캐시)
+export const bidirectionalAdjacencyMap = buildBidirectionalAdjacencyMap(initialTerritories);

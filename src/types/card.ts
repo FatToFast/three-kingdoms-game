@@ -24,6 +24,21 @@ export type StrategyEffect = ImplementedStrategyEffect | UnimplementedStrategyEf
 
 export type EventType = 'weather' | 'rebellion' | 'diplomacy' | 'fortune';
 
+// 구현된 이벤트 효과 (엔진에서 실제 처리)
+export type ImplementedEventEffect =
+  | 'DRAW_3'            // 카드 3장 추가 뽑기 (천운)
+  | 'ATTACK_DEBUFF'     // 모든 공격력 -2 (폭풍우)
+  | 'DISCARD_ALL_1'     // 모든 플레이어 손패 1장 버림 (역병)
+  | 'BLOCK_NEUTRAL'     // 주인 없는 영토 점령 불가 (황건적)
+  | 'BLOCK_ATTACK'      // 모든 공격 불가 (휴전)
+  | 'ATTACK_BUFF';      // 내 공격력 +1 (청명)
+
+// 미구현 이벤트 효과 (향후 구현 예정)
+// 현재 모든 이벤트 효과가 구현되어 있음
+
+// 전체 이벤트 효과
+export type EventEffect = ImplementedEventEffect;
+
 export interface BaseCard {
   id: string;
   name: string;
@@ -33,6 +48,7 @@ export interface BaseCard {
   rarity: Rarity;
   description: string;
   cost: number; // 행동력 비용
+  quantity?: number; // 덱에 포함될 수량 (기본값: 1)
 }
 
 export interface GeneralCard extends BaseCard {
@@ -54,16 +70,16 @@ export interface StrategyCard extends BaseCard {
 
 // 구현된 자원 보너스 효과 (엔진에서 실제 처리)
 export type ImplementedResourceBonusEffect =
-  | 'DRAW_1';           // 카드 1장 추가 뽑기
+  | 'DRAW_1'             // 카드 1장 추가 뽑기
+  | 'ATTACK_BOOST'       // 이번 턴 무장 공격력 +2
+  | 'ATTACK_BOOST_SMALL' // 이번 턴 무장 공격력 +1
+  | 'TERRITORY_DEFENSE'; // 영토 방어 보너스 +2
 
 // 미구현 자원 보너스 효과 (향후 구현 예정)
-export type UnimplementedResourceBonusEffect =
-  | 'ATTACK_BOOST'       // 이번 턴 무장 공격력 +2 (TODO)
-  | 'ATTACK_BOOST_SMALL' // 이번 턴 무장 공격력 +1 (TODO)
-  | 'TERRITORY_DEFENSE'; // 영토 방어 보너스 +2 (TODO)
+// 현재 모든 자원 보너스 효과가 구현되어 있음
 
 // 전체 자원 보너스 효과
-export type ResourceBonusEffect = ImplementedResourceBonusEffect | UnimplementedResourceBonusEffect;
+export type ResourceBonusEffect = ImplementedResourceBonusEffect;
 
 export interface ResourceCard extends BaseCard {
   type: 'resource';
@@ -76,6 +92,7 @@ export interface EventCard extends BaseCard {
   eventType: EventType;
   duration: number;
   globalEffect: boolean;
+  effect?: EventEffect;  // 이벤트 효과 (타입 기반 처리)
 }
 
 // 책사 카드 타입 (현재 단일 값만 사용, 확장 시 추가)

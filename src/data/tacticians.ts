@@ -3,6 +3,7 @@
 import type { TacticianCard } from '@/types/card';
 
 export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
+  // ===== 촉한 책사 =====
   {
     id: 't001',
     name: 'Zhuge Liang',
@@ -15,6 +16,7 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +4.',
   },
@@ -30,6 +32,7 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +3.',
   },
@@ -45,6 +48,7 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +3.',
   },
@@ -60,9 +64,12 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +2.',
   },
+
+  // ===== 위나라 책사 =====
   {
     id: 't005',
     name: 'Sima Yi',
@@ -75,6 +82,7 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +4.',
   },
@@ -90,6 +98,7 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +3.',
   },
@@ -105,6 +114,7 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +3.',
   },
@@ -120,9 +130,12 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +2.',
   },
+
+  // ===== 오나라 책사 =====
   {
     id: 't009',
     name: 'Zhou Yu',
@@ -135,6 +148,7 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +4.',
   },
@@ -150,6 +164,7 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +3.',
   },
@@ -165,6 +180,7 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +2.',
   },
@@ -180,6 +196,7 @@ export const tacticians: Omit<TacticianCard, 'instanceId'>[] = [
     slot: 'item',
     applyTo: 'single_attack_card',
     cost: 1,
+    quantity: 1,
     description:
       '책사(아이템). 공격 선언 시 사용: 지정한 공격 카드 1장의 공격력 +2.',
   },

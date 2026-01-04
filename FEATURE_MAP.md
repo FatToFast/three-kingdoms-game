@@ -51,11 +51,14 @@
 | 턴 종료 처리 | draw 페이즈에서는 불가, 손패 초과 시 discard 후 자동 턴 종료 | `src/lib/game/engine.ts` |
 | 공격 시작 | action 페이즈만, 인접성/행동력/진행중 전투/카드 타입(general,strategy) 검증 | `src/lib/game/engine.ts` |
 | 방어/전투 해결 | general/strategy만 방어 가능, 동점은 수비 승리, 점령 시 garrison→discard | `src/lib/game/engine.ts` |
-| 무장 배치 | 영토에 장수 배치 | `src/lib/game/engine.ts` |
-| 카드 사용/버리기 | 자원/이벤트 처리, 디스카드 | `src/lib/game/engine.ts` |
-| 승리 조건 | 영토 수, 가치 합산, 생존 | `src/lib/game/engine.ts` |
+| 무장 배치 | action 페이즈만, 소유 영토/전투 미진행/카드 cost 기반 행동력 검증 | `src/lib/game/engine.ts` |
+| 카드 사용 | action 페이즈만, 턴/전투 검증, cost 기반 행동력 차감, resource/event만 처리 | `src/lib/game/engine.ts` |
+| 카드 버리기 | discard 페이즈에서 손패 초과분 버리기, 제한 이하 시 자동 턴 종료 | `src/lib/game/engine.ts` |
+| 승리 조건 | 영토 18개/가치 30 이상/생존, 전투 후 즉시 판정, 동점 시 현재 턴 플레이어 우선 | `src/lib/game/engine.ts` |
 | 로그 기록 | 이벤트 로그 누적 | `src/lib/game/engine.ts` |
 | 영토 보너스 | 지역 지배/분산 패널티 | `src/lib/game/engine.ts` |
+| 턴 효과 처리 | turnEffects 관리, 턴 종료 시 효과 만료, 공격/방어 보너스 계산 | `src/lib/game/engine.ts` |
+| 글로벌 이벤트 | blockNeutralCapture(황건적), blockAllAttacks(휴전), activeEvents duration 관리 | `src/lib/game/engine.ts` |
 
 ---
 
@@ -63,11 +66,14 @@
 
 | Feature | Description | Location |
 | --- | --- | --- |
-| 카드 타입 정의 | General/Strategy/Resource/Event/Tactician, 구현/미구현 효과 분리 | `src/types/card.ts` |
+| 카드 타입 정의 | General/Strategy/Resource/Event/Tactician, 구현/미구현 효과 분리, quantity 필드 | `src/types/card.ts` |
 | 전략 효과 | 구현: BURN/AMBUSH/SIEGE/REINFORCE, 미구현: CHAIN/DIVIDE/ALLIANCE/RETREAT/SPY | `src/types/card.ts` |
-| 자원 보너스 효과 | 구현: DRAW_1, 미구현: ATTACK_BOOST/TERRITORY_DEFENSE | `src/types/card.ts` |
-| 카드 데이터 | 무장/전략/자원/이벤트/책사 카드 | `src/data/*.ts` |
-| 덱 생성/셔플/드로우 | 인스턴스 ID 부여, Fisher-Yates 셔플 | `src/data/cards.ts` |
+| 자원 보너스 효과 | 모두 구현: DRAW_1/ATTACK_BOOST/ATTACK_BOOST_SMALL/TERRITORY_DEFENSE | `src/types/card.ts` |
+| 이벤트 효과 | 모두 구현: DRAW_3/ATTACK_DEBUFF/DISCARD_ALL_1/BLOCK_NEUTRAL/BLOCK_ATTACK/ATTACK_BUFF | `src/types/card.ts` |
+| 턴 효과 시스템 | TurnEffect 인터페이스, 턴 종료 시 자동 만료, 공격/방어 보너스 적용 | `src/types/game.ts`, `src/lib/game/engine.ts` |
+| 카드 데이터 | 무장/전략/자원/이벤트/책사 카드, quantity 기반 수량 관리 | `src/data/*.ts` |
+| 덱 생성/셔플/드로우 | quantity 기반 카드 확장, 인스턴스 ID 부여, Fisher-Yates 셔플 | `src/data/cards.ts` |
+| 덱 밸런스 | 총 281장: 무장 210(75%), 전략 26(9%), 자원 24(9%), 책사 12(4%), 이벤트 9(3%) | `src/data/*.ts` |
 
 ---
 
@@ -75,7 +81,7 @@
 
 | Feature | Description | Location |
 | --- | --- | --- |
-| 영토 정의 | 46개 영토, 인접 관계, 방어 보너스 | `src/data/territories.ts` |
+| 영토 정의 | 46개 영토, 양방향 인접 관계, 방어 보너스 | `src/data/territories.ts` |
 | 지역 구분 | 지역별 소속/보너스 데이터 | `src/data/territories.ts` |
 | 영토 타입 | 소유자/수비대 모델 | `src/types/territory.ts` |
 
@@ -115,9 +121,9 @@
 | Feature | Description | Location |
 | --- | --- | --- |
 | 게임 상태 | `GameState`, `CombatState` 등 | `src/types/game.ts` |
-| 플레이어 모델 | `Player` + 색상 상수 | `src/types/player.ts` |
-| 카드 모델 | 카드 타입 정의 | `src/types/card.ts` |
-| 영토 모델 | 영토 타입 정의 | `src/types/territory.ts` |
+| 플레이어 모델 | `Player`, `PlayerId` 타입 별칭, `createPlayerId` 헬퍼 | `src/types/player.ts` |
+| 카드 모델 | 카드 타입 정의, quantity 필드 | `src/types/card.ts` |
+| 영토 모델 | `Territory`, `TerritoryId`, `GarrisonCard`, `PlayerId` 기반 owner | `src/types/territory.ts` |
 
 ---
 

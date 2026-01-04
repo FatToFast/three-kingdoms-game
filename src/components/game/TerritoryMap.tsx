@@ -63,36 +63,36 @@ export function TerritoryMap({
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* 지도 컨트롤 */}
-      <div className="flex items-center justify-between px-3 py-2 bg-amber-100 border-b border-amber-300">
-        <div className="flex items-center gap-2">
+      {/* 지도 컨트롤 - 모바일에서 컴팩트 */}
+      <div className="flex items-center justify-between px-2 md:px-3 py-1 md:py-2 bg-amber-100 border-b border-amber-300 flex-shrink-0">
+        <div className="flex items-center gap-1 md:gap-2">
           <button
             onClick={() => setScale((s) => Math.min(s * 1.2, 2))}
-            className="px-2 py-1 bg-amber-200 hover:bg-amber-300 rounded text-sm"
+            className="px-1.5 md:px-2 py-0.5 md:py-1 bg-amber-200 hover:bg-amber-300 rounded text-xs md:text-sm"
           >
             +
           </button>
           <button
             onClick={() => setScale((s) => Math.max(s * 0.8, 0.5))}
-            className="px-2 py-1 bg-amber-200 hover:bg-amber-300 rounded text-sm"
+            className="px-1.5 md:px-2 py-0.5 md:py-1 bg-amber-200 hover:bg-amber-300 rounded text-xs md:text-sm"
           >
             -
           </button>
           <button
             onClick={resetView}
-            className="px-2 py-1 bg-amber-200 hover:bg-amber-300 rounded text-sm"
+            className="px-1.5 md:px-2 py-0.5 md:py-1 bg-amber-200 hover:bg-amber-300 rounded text-xs md:text-sm"
           >
-            초기화
+            ↺
           </button>
-          <span className="text-xs text-amber-700">{Math.round(scale * 100)}%</span>
+          <span className="text-[10px] md:text-xs text-amber-700">{Math.round(scale * 100)}%</span>
         </div>
-        <div className="text-sm text-amber-800 font-semibold">
-          삼국지 천하대전 - 46개 도시
+        <div className="text-xs md:text-sm text-amber-800 font-semibold hidden sm:block">
+          삼국지 천하대전
         </div>
       </div>
 
-      {/* 지역 범례 */}
-      <div className="flex flex-wrap gap-2 px-3 py-1 bg-amber-50 border-b border-amber-200">
+      {/* 지역 범례 - 모바일에서 숨김 */}
+      <div className="hidden md:flex flex-wrap gap-2 px-3 py-1 bg-amber-50 border-b border-amber-200 flex-shrink-0">
         {regions.map((region) => (
           <div key={region} className="flex items-center gap-1">
             <div

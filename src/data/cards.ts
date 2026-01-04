@@ -8,18 +8,40 @@ import { events } from './events';
 import { tacticians } from './tacticians';
 import { nanoid } from 'nanoid';
 
-// 비무장 카드 비율 보정용 복제 배수
-const NON_GENERAL_MULTIPLIER = 2;
-const nonGeneralCards: Card[] = [...strategies, ...resources, ...events, ...tacticians] as Card[];
-const nonGeneralCopies: Card[] = Array.from({ length: NON_GENERAL_MULTIPLIER })
-  .flatMap(() => nonGeneralCards);
+// 카드 quantity 기반 확장 함수
+function expandByQuantity<T extends Card>(cards: readonly T[]): T[] {
+  return cards.flatMap((card) => {
+    const count = card.quantity ?? 1;
+    return Array.from({ length: count }, () => card);
+  });
+}
 
-// 모든 카드 합치기
-export const allCards: Card[] = [...generals, ...nonGeneralCopies] as Card[];
+// 모든 카드 생성 함수 (quantity 기반)
+function createAllCards(): Card[] {
+  // 무장 카드는 quantity 기반 확장
+  const expandedGenerals = expandByQuantity(generals as Card[]);
+  // 비무장 카드도 quantity 기반 확장
+  const expandedStrategies = expandByQuantity(strategies as Card[]);
+  const expandedResources = expandByQuantity(resources as Card[]);
+  const expandedEvents = expandByQuantity(events as Card[]);
+  const expandedTacticians = expandByQuantity(tacticians as Card[]);
+
+  return [
+    ...expandedGenerals,
+    ...expandedStrategies,
+    ...expandedResources,
+    ...expandedEvents,
+    ...expandedTacticians,
+  ];
+}
+
+// 기본 설정으로 생성된 카드 목록 (호환성 유지)
+export const allCards: Card[] = createAllCards();
 
 // 덱 생성 (인스턴스 ID 부여)
 export function createDeck(): CardInHand[] {
-  return allCards.map((card) => ({
+  const cards = createAllCards();
+  return cards.map((card) => ({
     ...card,
     instanceId: nanoid(),
   })) as CardInHand[];

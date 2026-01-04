@@ -17,18 +17,17 @@ export function PlayerPanel({ player, isCurrentPlayer = false, compact = false }
     return (
       <div
         className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-lg transition-all',
+          'flex items-center gap-1 md:gap-2 px-1.5 md:px-3 py-1 md:py-2 rounded-lg transition-all',
           isCurrentPlayer ? 'bg-amber-100 ring-2 ring-amber-400' : 'bg-white/80',
           player.isEliminated && 'opacity-50 grayscale'
         )}
         >
         <div
-          className="w-4 h-4 rounded-full shadow"
+          className="w-3 h-3 md:w-4 md:h-4 rounded-full shadow"
           style={{ backgroundColor: player.color }}
         />
-        <span className="font-medium text-sm">{player.name}</span>
-        <span className="text-xs text-gray-500">🃏{handCount}</span>
-        <span className="text-xs text-gray-500">🏰{player.territories.length}</span>
+        <span className="font-medium text-xs md:text-sm">{player.name.charAt(0)}</span>
+        <span className="text-[10px] md:text-xs text-gray-500">🏰{player.territories.length}</span>
       </div>
     );
   }

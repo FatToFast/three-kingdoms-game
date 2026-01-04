@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import type { GameState } from '@/types/game';
+import type { GameState, GameOptions } from '@/types/game';
 import { CARDS_PER_DRAW } from '@/types/game';
 import type { CardInHand } from '@/types/card';
 import { GameEngine } from '@/lib/game/engine';
@@ -52,7 +52,7 @@ interface GameStore {
   seatIndex: number | null;
 
   // 게임 초기화
-  initGame: (playerNames: string[], aiPlayerCount?: number, aiDifficulty?: AIDifficulty) => void;
+  initGame: (playerNames: string[], aiPlayerCount?: number, aiDifficulty?: AIDifficulty, gameOptions?: GameOptions) => void;
   resetGame: () => void;
 
   // AI
@@ -276,7 +276,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   seatIndex: null,
   aiDifficulty: 'normal',
 
-  initGame: (playerNames, aiPlayerCount = 0, aiDifficulty = 'normal') => {
+  initGame: (playerNames, aiPlayerCount = 0, aiDifficulty = 'normal', gameOptions) => {
     if (get().mode === 'online') return;
 
     // AI 플레이어 이름 생성
@@ -285,7 +285,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       allPlayerNames.push(getAIName(i));
     }
 
-    const gameState = GameEngine.initializeGame(allPlayerNames);
+    const gameState = GameEngine.initializeGame(allPlayerNames, gameOptions);
 
     // AI 플레이어 표시
     for (let i = playerNames.length; i < allPlayerNames.length; i++) {
@@ -488,9 +488,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const currentPlayer = getCurrentPlayerFromState(gameState);
     if (!currentPlayer) return;
 
-    // 영토 보너스 계산 (기본 CARDS_PER_DRAW장 + 보너스)
+    // 영토 보너스 계산 (기본 CARDS_PER_DRAW장 + 보너스, 최소 1장 보장)
     const territoryBonus = GameEngine.calculateTerritoryBonus(gameState, currentPlayer.id);
-    const totalDraw = CARDS_PER_DRAW + territoryBonus.bonusDraw;
+    const totalDraw = Math.max(1, CARDS_PER_DRAW + territoryBonus.bonusDraw);
 
     let newState = GameEngine.drawCards({ ...gameState }, currentPlayer.id, totalDraw, {
       ensureNonGeneral: true,

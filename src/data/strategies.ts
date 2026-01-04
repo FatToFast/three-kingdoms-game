@@ -3,7 +3,7 @@
 import type { StrategyCard } from '@/types/card';
 
 export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
-  // ===== 공격 전략 =====
+  // ===== 공격 전략 (구현됨) =====
   {
     id: 's001',
     name: 'Fire Attack',
@@ -15,6 +15,7 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 3,
     targetType: 'enemy',
     cost: 1,
+    quantity: 1,
     description: '적 방어력 -3. 적벽대전의 핵심 전략.',
   },
   {
@@ -28,6 +29,7 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 2,
     targetType: 'enemy',
     cost: 1,
+    quantity: 2,
     description: '적 방어력 -2.',
   },
   {
@@ -41,6 +43,7 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 3,
     targetType: 'enemy',
     cost: 1,
+    quantity: 2,
     description: '기습 공격! 공격력 +3, 적이 방어 카드를 1장만 사용 가능.',
   },
   {
@@ -54,23 +57,25 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 2,
     targetType: 'territory',
     cost: 1,
-    description: '영토 공격 시 공격력 +2.',
-  },
-  {
-    id: 's005',
-    name: 'Siege',
-    nameKo: '공성',
-    type: 'strategy',
-    faction: 'neutral',
-    rarity: 'common',
-    effect: 'SIEGE',
-    value: 2,
-    targetType: 'territory',
-    cost: 1,
+    quantity: 4,
     description: '영토 공격 시 공격력 +2.',
   },
 
-  // ===== 방어/지원 전략 =====
+  // ===== 방어/지원 전략 (구현됨) =====
+  {
+    id: 's005',
+    name: 'Reinforce',
+    nameKo: '증원',
+    type: 'strategy',
+    faction: 'neutral',
+    rarity: 'rare',
+    effect: 'REINFORCE',
+    value: 3,
+    targetType: 'self',
+    cost: 1,
+    quantity: 2,
+    description: '방어력 +3. 원군이 도착했다!',
+  },
   {
     id: 's006',
     name: 'Reinforce',
@@ -79,26 +84,16 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     faction: 'neutral',
     rarity: 'common',
     effect: 'REINFORCE',
-    value: 3,
-    targetType: 'self',
-    cost: 1,
-    description: '방어력 +3. 원군이 도착했다!',
-  },
-  {
-    id: 's007',
-    name: 'Reinforce',
-    nameKo: '증원',
-    type: 'strategy',
-    faction: 'neutral',
-    rarity: 'common',
-    effect: 'REINFORCE',
     value: 2,
     targetType: 'self',
     cost: 1,
+    quantity: 4,
     description: '방어력 +2.',
   },
+
+  // ===== 특수 전략 (미구현) =====
   {
-    id: 's008',
+    id: 's007',
     name: 'Retreat',
     nameKo: '퇴각',
     type: 'strategy',
@@ -108,12 +103,11 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 0,
     targetType: 'self',
     cost: 1,
-    description: '전투를 피한다. 사용한 무장 카드를 손패로 회수.',
+    quantity: 2,
+    description: '전투를 피한다. 사용한 무장 카드를 손패로 회수. (미구현)',
   },
-
-  // ===== 특수 전략 =====
   {
-    id: 's009',
+    id: 's008',
     name: 'Chain Strategy',
     nameKo: '연환계',
     type: 'strategy',
@@ -123,10 +117,11 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 1,
     targetType: 'enemy',
     cost: 1,
-    description: '적의 다음 턴 행동력 -1. 서서의 계책.',
+    quantity: 1,
+    description: '적의 다음 턴 행동력 -1. 서서의 계책. (미구현)',
   },
   {
-    id: 's010',
+    id: 's009',
     name: 'Divide and Conquer',
     nameKo: '이간계',
     type: 'strategy',
@@ -136,10 +131,11 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 0,
     targetType: 'enemy',
     cost: 1,
-    description: '적의 동맹을 해제시킨다. 주유의 계책.',
+    quantity: 1,
+    description: '적의 동맹을 해제시킨다. 주유의 계책. (미구현)',
   },
   {
-    id: 's011',
+    id: 's010',
     name: 'Alliance',
     nameKo: '동맹',
     type: 'strategy',
@@ -149,23 +145,11 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 1,
     targetType: 'enemy',
     cost: 1,
-    description: '다른 플레이어와 1턴 동맹. 서로 공격 불가.',
+    quantity: 2,
+    description: '다른 플레이어와 1턴 동맹. 서로 공격 불가. (미구현)',
   },
   {
-    id: 's012',
-    name: 'Alliance',
-    nameKo: '동맹',
-    type: 'strategy',
-    faction: 'neutral',
-    rarity: 'common',
-    effect: 'ALLIANCE',
-    value: 1,
-    targetType: 'enemy',
-    cost: 1,
-    description: '다른 플레이어와 1턴 동맹.',
-  },
-  {
-    id: 's013',
+    id: 's011',
     name: 'Spy',
     nameKo: '첩보',
     type: 'strategy',
@@ -175,12 +159,13 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 0,
     targetType: 'enemy',
     cost: 1,
-    description: '적 플레이어의 손패를 확인한다.',
+    quantity: 2,
+    description: '적 플레이어의 손패를 확인한다. (미구현)',
   },
 
-  // ===== 진영별 특수 전략 =====
+  // ===== 진영별 특수 전략 (구현됨) =====
   {
-    id: 's014',
+    id: 's012',
     name: 'Wei Strategy',
     nameKo: '위나라 군령',
     type: 'strategy',
@@ -190,10 +175,11 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 3,
     targetType: 'territory',
     cost: 1,
+    quantity: 1,
     description: '위 무장과 함께 사용 시 공격력 +3.',
   },
   {
-    id: 's015',
+    id: 's013',
     name: 'Shu Strategy',
     nameKo: '촉한 결의',
     type: 'strategy',
@@ -203,10 +189,11 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 4,
     targetType: 'self',
     cost: 1,
+    quantity: 1,
     description: '촉 무장과 함께 사용 시 방어력 +4.',
   },
   {
-    id: 's016',
+    id: 's014',
     name: 'Wu Strategy',
     nameKo: '오나라 수군',
     type: 'strategy',
@@ -216,6 +203,7 @@ export const strategies: Omit<StrategyCard, 'instanceId'>[] = [
     value: 4,
     targetType: 'enemy',
     cost: 1,
+    quantity: 1,
     description: '오 무장과 함께 사용 시 적 방어력 -4.',
   },
 ];

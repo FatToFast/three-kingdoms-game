@@ -28,8 +28,9 @@ export function Territory({
   onClick,
 }: TerritoryProps) {
   const baseColor = territoryColors[territory.id];
-  // 소유자가 있으면 플레이어 색상, 없으면 지역 기본 색상
-  const fillColor = owner ? owner.color : (baseColor || '#9CA3AF');
+  // 소유자가 있으면 플레이어 색상, 없으면 중립 색상 (빈 영토)
+  const NEUTRAL_COLOR = '#D1D5DB'; // 중립 회색
+  const fillColor = owner ? owner.color : NEUTRAL_COLOR;
 
   return (
     <motion.g
@@ -82,25 +83,25 @@ export function Territory({
         />
       )}
 
-      {/* 영토 이름 - 축소된 폰트 */}
+      {/* 영토 이름 - 빈 영토는 어두운 색상으로 가독성 확보 */}
       <text
         x={territory.position.x}
         y={territory.position.y + 1}
         textAnchor="middle"
         fontSize="8"
-        className="fill-white font-bold pointer-events-none select-none"
-        style={{ textShadow: '1px 1px 1px rgba(0,0,0,0.7)' }}
+        className={`font-bold pointer-events-none select-none ${owner ? 'fill-white' : 'fill-gray-700'}`}
+        style={{ textShadow: owner ? '1px 1px 1px rgba(0,0,0,0.7)' : '1px 1px 1px rgba(255,255,255,0.5)' }}
       >
         {territory.nameKo}
       </text>
 
-      {/* 영토 가치 표시 - 숫자로 변경 (별 대신) */}
+      {/* 영토 가치 표시 - 빈 영토는 어두운 노란색 */}
       <text
         x={territory.position.x}
         y={territory.position.y + 12}
         textAnchor="middle"
         fontSize="7"
-        className="fill-yellow-300 font-bold pointer-events-none select-none"
+        className={`font-bold pointer-events-none select-none ${owner ? 'fill-yellow-300' : 'fill-yellow-600'}`}
       >
         ★{territory.value}
       </text>

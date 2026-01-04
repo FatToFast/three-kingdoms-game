@@ -11,7 +11,7 @@ interface CardProps {
   isSelected?: boolean;
   isPlayable?: boolean;
   onClick?: () => void;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   showBack?: boolean;
   showTooltip?: boolean;
   tooltipPosition?: 'top' | 'bottom' | 'left' | 'right';
@@ -67,6 +67,7 @@ export function Card({
   const [isHovered, setIsHovered] = useState(false);
 
   const sizeClasses = {
+    xs: 'w-11 h-16 text-[6px]',
     sm: 'w-16 h-24 text-[8px]',
     md: 'w-24 h-36 text-xs',
     lg: 'w-32 h-48 text-sm',
