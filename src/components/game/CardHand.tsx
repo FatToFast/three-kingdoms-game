@@ -72,6 +72,7 @@ export function CardHand({
                   isPlayable={canSelect}
                   onClick={() => onCardClick(card.instanceId)}
                   size="md"
+                  tooltipPosition="top"
                 />
               </motion.div>
             );

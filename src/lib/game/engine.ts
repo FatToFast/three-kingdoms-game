@@ -104,41 +104,53 @@ export class GameEngine {
     const player = state.players.find((p) => p.id === playerId);
     if (!player) return state;
 
-    const actualCount = Math.min(count, state.deck.length);
-    const { drawn, remaining } = drawCards(state.deck, actualCount);
+    const drawn: CardInHand[] = [];
+    let remaining = count;
 
-    let nextDeck = remaining;
+    // 덱에서 뽑을 수 있는 만큼 뽑기
+    if (state.deck.length > 0) {
+      const fromDeck = Math.min(remaining, state.deck.length);
+      const { drawn: drawnFromDeck, remaining: deckRemaining } = drawCards(state.deck, fromDeck);
+      drawn.push(...drawnFromDeck);
+      state.deck = deckRemaining;
+      remaining -= fromDeck;
+    }
 
-    // 덱이 비면 버린 카드 더미 셔플해서 재사용
-    if (nextDeck.length === 0 && state.discardPile.length > 0) {
-      nextDeck = shuffleDeck(
+    // 덱이 부족하면 버린 카드 더미 셔플해서 이어서 뽑기
+    if (remaining > 0 && state.discardPile.length > 0) {
+      const reshuffled = shuffleDeck(
         state.discardPile.map((card) => ({ ...card, instanceId: nanoid() }))
       ) as CardInHand[];
       state.discardPile = [];
+      state.deck = reshuffled;
       GameEngine.addLog(state, 'system', '덱을 다시 섞었습니다.');
+
+      const fromReshuffled = Math.min(remaining, state.deck.length);
+      const { drawn: drawnFromReshuffled, remaining: deckRemaining } = drawCards(state.deck, fromReshuffled);
+      drawn.push(...drawnFromReshuffled);
+      state.deck = deckRemaining;
     }
 
     if (options?.ensureNonGeneral && drawn.length > 0) {
       const hasNonGeneral = drawn.some((card) => card.type !== 'general');
       if (!hasNonGeneral) {
-        const replacementIndex = nextDeck.findIndex((card) => card.type !== 'general');
+        const replacementIndex = state.deck.findIndex((card) => card.type !== 'general');
         if (replacementIndex !== -1) {
-          const [replacement] = nextDeck.splice(replacementIndex, 1);
+          const [replacement] = state.deck.splice(replacementIndex, 1);
           const replaced = drawn.pop();
           if (replaced) {
             drawn.push(replacement);
-            nextDeck.push(replaced);
+            state.deck.push(replaced);
           } else {
-            nextDeck.unshift(replacement);
+            state.deck.unshift(replacement);
           }
         }
       }
     }
 
     player.hand.push(...drawn);
-    state.deck = nextDeck;
 
-    GameEngine.addLog(state, playerId, `카드 ${actualCount}장을 뽑았습니다.`);
+    GameEngine.addLog(state, playerId, `카드 ${drawn.length}장을 뽑았습니다.`);
 
     return state;
   }
@@ -236,6 +248,18 @@ export class GameEngine {
     const targetTerritory = state.territories.find((t) => t.id === targetTerritoryId);
 
     if (!attacker || !targetTerritory) return state;
+
+    // 행동력 체크
+    if (attacker.actions <= 0) {
+      GameEngine.addLog(state, attackerId, '행동력이 부족합니다.');
+      return state;
+    }
+
+    // 자기 영토 공격 방지
+    if (targetTerritory.owner === attackerId) {
+      GameEngine.addLog(state, attackerId, '자신의 영토는 공격할 수 없습니다.');
+      return state;
+    }
 
     // 인접 영토 확인
     const hasAdjacentTerritory = attacker.territories.some((tId) => {
@@ -463,6 +487,13 @@ export class GameEngine {
     const cardIndex = player?.hand.findIndex((c) => c.instanceId === cardInstanceId);
 
     if (!player || !territory || cardIndex === undefined || cardIndex === -1) return state;
+
+    // 행동력 체크
+    if (player.actions <= 0) {
+      GameEngine.addLog(state, playerId, '행동력이 부족합니다.');
+      return state;
+    }
+
     if (territory.owner !== playerId) {
       GameEngine.addLog(state, playerId, '자신의 영토에만 무장을 배치할 수 있습니다.');
       return state;
@@ -547,22 +578,27 @@ export class GameEngine {
     return state;
   }
 
-  // 공격 가능한 영토 목록
+  // 공격 가능한 영토 목록 (최적화: Map 캐시 사용)
   static getAttackableTerritoriesIds(state: GameState, playerId: string): string[] {
     const player = state.players.find((p) => p.id === playerId);
     if (!player) return [];
 
+    // 영토 Map 캐시 (find 반복 방지)
+    const territoryMap = new Map(state.territories.map((t) => [t.id, t]));
+    const ownedSet = new Set(player.territories);
     const attackable = new Set<string>();
 
-    player.territories.forEach((tId) => {
-      const territory = state.territories.find((t) => t.id === tId);
-      territory?.adjacentTo.forEach((adjId) => {
-        const adjTerritory = state.territories.find((t) => t.id === adjId);
-        if (adjTerritory && adjTerritory.owner !== playerId) {
-          attackable.add(adjId);
+    for (const tId of player.territories) {
+      const territory = territoryMap.get(tId);
+      if (territory) {
+        for (const adjId of territory.adjacentTo) {
+          // 자기 영토가 아니면 공격 가능
+          if (!ownedSet.has(adjId)) {
+            attackable.add(adjId);
+          }
         }
-      });
-    });
+      }
+    }
 
     return Array.from(attackable);
   }
@@ -656,7 +692,7 @@ export class GameEngine {
     return { bonusDraw, bonusActions, dominatedRegions, fragmentationGroups };
   }
 
-  // 연결된 영토 그룹 수 계산 (BFS/DFS)
+  // 연결된 영토 그룹 수 계산 (BFS - 최적화된 버전)
   static countConnectedTerritoryGroups(state: GameState, playerId: string): number {
     const player = state.players.find((p) => p.id === playerId);
     if (!player || player.territories.length <= 1) return player?.territories.length || 0;
@@ -665,14 +701,18 @@ export class GameEngine {
     const visited = new Set<string>();
     let groupCount = 0;
 
-    // BFS로 연결된 영토 탐색
+    // 영토 Map 캐시 (find 반복 방지)
+    const territoryMap = new Map(state.territories.map((t) => [t.id, t]));
+
+    // BFS로 연결된 영토 탐색 (인덱스 포인터 사용으로 shift() O(n) 비용 제거)
     const bfs = (startId: string) => {
       const queue = [startId];
+      let head = 0;
       visited.add(startId);
 
-      while (queue.length > 0) {
-        const currentId = queue.shift()!;
-        const territory = state.territories.find((t) => t.id === currentId);
+      while (head < queue.length) {
+        const currentId = queue[head++];
+        const territory = territoryMap.get(currentId);
 
         if (territory) {
           for (const adjId of territory.adjacentTo) {

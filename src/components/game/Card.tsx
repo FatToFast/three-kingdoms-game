@@ -1,8 +1,10 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { Card as CardType, CardInHand } from '@/types/card';
+import { CardTooltip } from './CardTooltip';
 
 interface CardProps {
   card: CardType | CardInHand;
@@ -11,6 +13,8 @@ interface CardProps {
   onClick?: () => void;
   size?: 'sm' | 'md' | 'lg';
   showBack?: boolean;
+  showTooltip?: boolean;
+  tooltipPosition?: 'top' | 'bottom' | 'left' | 'right';
 }
 
 const factionColors = {
@@ -57,7 +61,11 @@ export function Card({
   onClick,
   size = 'md',
   showBack = false,
+  showTooltip = true,
+  tooltipPosition = 'right',
 }: CardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
   const sizeClasses = {
     sm: 'w-16 h-24 text-[8px]',
     md: 'w-24 h-36 text-xs',
@@ -84,21 +92,26 @@ export function Card({
   }
 
   return (
-    <motion.div
-      className={cn(
-        'relative rounded-lg border-2 cursor-pointer overflow-hidden select-none',
-        sizeClasses[size],
-        faction.border,
-        `bg-gradient-to-br ${faction.gradient}`,
-        rarityStyles[card.rarity],
-        isSelected && 'ring-4 ring-yellow-300 scale-105 z-10',
-        !isPlayable && 'opacity-50 cursor-not-allowed grayscale'
-      )}
-      whileHover={isPlayable ? { y: -8, scale: 1.05 } : {}}
-      whileTap={isPlayable ? { scale: 0.98 } : {}}
-      onClick={isPlayable ? onClick : undefined}
-      layout
+    <div
+      className="relative"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
+      <motion.div
+        className={cn(
+          'relative rounded-lg border-2 cursor-pointer overflow-hidden select-none',
+          sizeClasses[size],
+          faction.border,
+          `bg-gradient-to-br ${faction.gradient}`,
+          rarityStyles[card.rarity],
+          isSelected && 'ring-4 ring-yellow-300 scale-105 z-10',
+          !isPlayable && 'opacity-50 cursor-not-allowed grayscale'
+        )}
+        whileHover={isPlayable ? { y: -8, scale: 1.05 } : {}}
+        whileTap={isPlayable ? { scale: 0.98 } : {}}
+        onClick={isPlayable ? onClick : undefined}
+        layout
+      >
       {/* 카드 타입 아이콘 */}
       <div className="absolute top-1 left-1 text-base drop-shadow-md">
         {typeIcons[card.type]}
@@ -181,6 +194,22 @@ export function Card({
       {card.rarity === 'legendary' && (
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent animate-pulse pointer-events-none" />
       )}
-    </motion.div>
+
+      </motion.div>
+
+      {/* 호버 툴팁 */}
+      <AnimatePresence>
+        {showTooltip && isHovered && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+            <CardTooltip card={card} position={tooltipPosition} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

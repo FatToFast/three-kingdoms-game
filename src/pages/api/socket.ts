@@ -204,12 +204,15 @@ const isPlayerActionAllowed = (room: Room, playerId: string, action: GameActionP
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
   const isCurrentPlayer = currentPlayer?.id === playerId;
 
-  if (isCurrentPlayer) return true;
-
+  // 방어 액션은 방어자만 가능 (현재 턴 플레이어가 아니어도)
   const isDefenseAction = action === 'defend' || action === 'skipDefense';
-  if (!isDefenseAction || !gameState.combat) return false;
+  if (isDefenseAction) {
+    if (!gameState.combat || gameState.combat.phase !== 'defending') return false;
+    return gameState.combat.defenderId === playerId;
+  }
 
-  return gameState.combat.defenderId === playerId;
+  // 그 외 모든 액션은 현재 턴 플레이어만 가능
+  return isCurrentPlayer;
 };
 
 const startCleanup = (io: Server, rooms: Map<string, Room>) => {
@@ -455,7 +458,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponseWithSoc
         switch (payload.action) {
           case 'drawCards': {
             const currentPlayer = state.players[state.currentPlayerIndex];
-            room.gameState = GameEngine.drawCards(state, currentPlayer.id, 2, {
+            // 영토 보너스 계산하여 드로우 수 결정
+            const territoryBonus = GameEngine.calculateTerritoryBonus(state, currentPlayer.id);
+            const drawCount = Math.max(1, 2 + territoryBonus.bonusDraw);
+            room.gameState = GameEngine.drawCards(state, currentPlayer.id, drawCount, {
               ensureNonGeneral: true,
             });
             room.gameState = GameEngine.nextPhase(room.gameState);
